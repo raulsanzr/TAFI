@@ -2,3 +2,9 @@
 /data
 scripts/test_tafi.ipynb
 /scripts/__pycache__
+/results
+scripts/abc_functions_25-02-2025.py
+scripts/run_abc.sh
+scripts/tafi.sif
+scripts/tafi_singularity.def
+scripts/TAFI_sims.py

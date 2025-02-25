@@ -6,9 +6,6 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import StandardScaler
 
-# Define the size of the collected data
-collected_data_size = 100
-
 # --- DIRECTORIES --- #
 results_dir = '../results/'
 os.makedirs(results_dir, exist_ok=True)  # Create results directory if it doesn't exist
@@ -29,16 +26,6 @@ min_reads = donor_bed["AD_ALT"].min()  # Minimum number of reads for the alterna
 
 # Define parameters for discretization and frequency analysis
 discr_cov_mean = 1000
-discretization_cov = np.array([discr_cov_mean])
-lowest_frequency_allowed = 1 / np.max(discretization_cov)
-nr_of_bins = int(1 / lowest_frequency_allowed)
-xdata = np.linspace(lowest_frequency_allowed, 1, nr_of_bins + 1)
-
-# Calculate theoretical distributions (Wright-Fisher and Exponential)
-y_wf = f_alpha(xdata, 1.0, 1.0)  # Wright-Fisher distribution
-y_exp = f_alpha(xdata, 1.0, 2.0)  # Exponential distribution
-y_prob_exp = y_exp / np.sum(y_exp)  # Normalize to probabilities
-y_prob_wf = y_wf / np.sum(y_wf)  # Normalize to probabilities
 
 # Define bins for histogram analysis
 binss = np.linspace(0, 1, 101)
@@ -50,32 +37,39 @@ discretization_cov = np.array([exp_discr_cov_mean])
 lowest_frequency_allowed = 1 / np.max(discretization_cov)
 nr_of_bins = int(1 / lowest_frequency_allowed)
 exp_xdata = np.linspace(lowest_frequency_allowed, 1, nr_of_bins + 1)
-y_exp = f_alpha(exp_xdata, 1.0, 2.0)
-y_prob_exp = y_exp / np.sum(y_exp)
+xdata = np.linspace(lowest_frequency_allowed, 1, nr_of_bins + 1)
+
+# Calculate theoretical distributions (Wright-Fisher and Exponential)
+y_wf = f_alpha(xdata, 1.0, 1.0)  # Wright-Fisher distribution
+y_exp = f_alpha(xdata, 1.0, 2.0)  # Exponential distribution
+y_prob_exp = y_exp / np.sum(y_exp)  # Normalize to probabilities
+y_prob_wf = y_wf / np.sum(y_wf)  # Normalize to probabilities
 
 # --- RUN --- #
 max_steps = 100  # Maximum number of steps for the fitting process
+collected_data_size = 100 # Define the size of the collected data
 
 # Initialize a DataFrame to store final results
-final_results = pd.DataFrame()
-# Add metadata to the final results
-final_results['donor'] = donor_id
-final_results['cov'] = [cov_val]
-final_results['min_reads'] = min_reads
+final_results = pd.DataFrame([{
+    'donor': donor_id,
+    'cov': cov_val,
+    'min_reads': min_reads
+}])
 
 # Define models to be tested (Wright-Fisher and Exponential) and their specific parameters
 models = {
     "WF": {
         "y_prob": y_prob_wf,
         "xdata": xdata,
-        "run_function": run_fit_smc  # Custom function for fitting
     },
     "EXP": {
         "y_prob": y_prob_exp,
         "xdata": exp_xdata,
-        "run_function": run_fit_smc_with_WF_initial  # Custom function for fitting with WF initial
     }
 }
+
+# Initialize values of purity, S, and C as None
+pred_purity, pred_S, pred_C = None, None, None
 
 # Iterate over each model (WF and EXP)
 for test_model, params in models.items():
@@ -86,18 +80,9 @@ for test_model, params in models.items():
     
     # Run the fitting process 4 times for each model
     for i in range(4):
-        if test_model == "EXP":
-            # Run the fitting function for the Exponential model
-            pur_pred, S_pred, C_pred, scores_pred = run_function(
-                test_model, cov, min_reads, max_steps, real_hist, collected_data_size,
-                xdata, y_prob, pred_purity, pred_C
-            )
-        else:
-            # Run the fitting function for the Wright-Fisher model
-            pur_pred, S_pred, C_pred, scores_pred = run_function(
-                test_model, cov, min_reads, max_steps, real_hist, collected_data_size,
-                xdata, y_prob
-            )
+        pur_pred, S_pred, C_pred, scores_pred = run_fit(
+            test_model, cov, min_reads, max_steps, real_hist, collected_data_size,
+            xdata, y_prob, pred_purity, pred_C)
         
         # Store the results of each run
         ensemble_results = pd.DataFrame({
@@ -105,40 +90,37 @@ for test_model, params in models.items():
             'S_pred': S_pred,
             'C_pred': C_pred,
             'scores_final': scores_pred,
-            'chain': i
-        })
+            'chain': i})
         results = pd.concat([results, ensemble_results])
     
-    # Add discretization coverage mean to the results
-    results['discr_cov_mean'] = discr_cov_mean
     df = results[['purity_pred', 'S_pred', 'C_pred', 'scores_final']].copy()
 
-    scaled_colnames = [col + '_scaled' for col in df.columns]
-    # Scale the results using StandardScaler
-    df[scaled_colnames] = StandardScaler().fit_transform(df)
+    # scaled_colnames = [col + '_scaled' for col in df.columns]
+    # # Scale the results using StandardScaler
+    # df[scaled_colnames] = StandardScaler().fit_transform(df)
     
-    # Perform clustering using KMeans to identify the best cluster
-    lowest_cluster_means, highest_cluster_nr = [], []
-    for i in range(2, 4):
-        kmeans = KMeans(n_clusters=i, random_state=42, n_init=10).fit(df[scaled_colnames])
-        df[f'cluster{i}'] = kmeans.labels_
-        group_means = df.groupby(f'cluster{i}')['scores_final'].mean()
-        lowest_cluster_means.append(group_means.min())
-        highest_cluster_nr.append(group_means.idxmax())
+    # # Perform clustering using KMeans to identify the best cluster
+    # lowest_cluster_means, highest_cluster_nr = [], []
+    # for i in range(2, 4):
+    #     kmeans = KMeans(n_clusters=i, random_state=20, n_init=10).fit(df[scaled_colnames])
+    #     df[f'cluster{i}'] = kmeans.labels_
+    #     group_means = df.groupby(f'cluster{i}')['scores_final'].mean()
+    #     lowest_cluster_means.append(group_means.min())
+    #     highest_cluster_nr.append(group_means.idxmax())
     
-    # Select the best cluster based on the lowest mean score
-    K = np.argmin(lowest_cluster_means) + 2
-    cluster_index = df[f'cluster{K}'].unique()[np.argmin([df[df[f'cluster{K}'] == c]['scores_final'].mean() for c in df[f'cluster{K}'].unique()])]
-    df = df[df[f'cluster{K}'] == cluster_index]
+    # # Select the best cluster based on the lowest mean score
+    # K = np.argmin(lowest_cluster_means) + 2
+    # cluster_index = df[f'cluster{K}'].unique()[np.argmin([df[df[f'cluster{K}'] == c]['scores_final'].mean() for c in df[f'cluster{K}'].unique()])]
+    # df = df[df[f'cluster{K}'] == cluster_index]
     
-    # Calculate z-scores to filter out outliers
-    mean_score, std_score = df['scores_final'].mean(), df['scores_final'].std()
-    df['z_score'] = (df['scores_final'] - mean_score) / std_score
-    extra_correction_df = df[(df['z_score'] >= -1.67) & (df['z_score'] <= 1.67)]
+    # # Calculate z-scores to filter out outliers
+    # mean_score, std_score = df['scores_final'].mean(), df['scores_final'].std()
+    # df['z_score'] = (df['scores_final'] - mean_score) / std_score
+    # extra_correction_df = df[(df['z_score'] >= -1.67) & (df['z_score'] <= 1.67)]
     
-    # Use the filtered data if there are enough samples
-    if len(extra_correction_df) >= 3:
-        df = extra_correction_df
+    # # Use the filtered data if there are enough samples
+    # if len(extra_correction_df) >= 3:
+    #     df = extra_correction_df
     
     # Calculate final predictions for purity, S, and C
     pred_purity, pred_S, pred_C = df['purity_pred'].mean(), int(df['S_pred'].mean()), int(df['C_pred'].mean())
