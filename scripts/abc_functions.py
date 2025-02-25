@@ -2,11 +2,9 @@ import os
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 import numpy as np
-import pandas as pd
 import sys
 import scipy.stats as st
-from scipy.stats import multivariate_normal, wasserstein_distance
-from scipy.special import rel_entr
+from scipy.stats import wasserstein_distance
 from numba import njit
 from numba import jit
 import random
@@ -51,7 +49,7 @@ def simulate_subclonal(pur, S, cov, min_reads, xdata, y_prob):
     return coverage_dist_emp_S[subclonal_alt_reads>=min_reads], subclonal_alt_reads[subclonal_alt_reads>=min_reads]
 
 @njit
-def build_simulated_vaf(pur,S,C,cov,binss,min_reads,xdata,y_prob):
+def simulate_vafs(pur,S,C,cov,min_reads,xdata,y_prob):
     '''
     Builds the VAF histogram for the simulated clonal and subclonal mutations.
     '''
@@ -62,7 +60,7 @@ def build_simulated_vaf(pur,S,C,cov,binss,min_reads,xdata,y_prob):
         vaf[i] = alt_C[i] / cov_C[i]
     for i in range(len(cov_C), len(cov_C) + len(cov_S)):
         vaf[i] = alt_S[i - len(cov_C)] / cov_S[i - len(cov_C)] 
-    return np.histogram(vaf, bins=binss, range=(0, 1))[0]
+    return vaf
 
 @njit
 def propose_new_parameters(current_purity,current_S, current_C, proposal_sd):
@@ -75,33 +73,32 @@ def propose_new_parameters(current_purity,current_S, current_C, proposal_sd):
 
     return new_purity, new_S, new_C
 
-@njit
-def wasserstein(af1, af2):
+def wasserstein(vaf1, vaf2):
     '''
     Calculates the Wasserstein distance from the variant allele frequencies
     '''
-    return wasserstein_distance(range(len(vaf1)), range(len(vaf2)), vaf1, vaf2)
+    return wasserstein_distance(vaf1, vaf2)
 
 def f_alpha(x,a, alpha):
     return a*(1/(x**alpha))
 
 @njit
-def distance(vaf2,nr_of_repeats,purity,S,C,cov,binss,min_reads,xdata,y_prob):
+def distance(vaf2,nr_of_repeats,purity,S,C,cov,min_reads,xdata,y_prob):
     '''
     Calculates the distance (averaged across nr_of_repeats times) between the observed and simulated VAFs.
     '''
     r_nd5 = np.zeros(nr_of_repeats)
     for repeat in range(nr_of_repeats):
-        vaf1 = build_simulated_vaf(purity,S,C,cov,binss,min_reads,xdata,y_prob)
+        vaf1 = simulate_vafs(purity,S,C,cov,min_reads,xdata,y_prob)
         r_nd5[repeat] = wasserstein(vaf1, vaf2)
     return np.mean(r_nd5)
 
 @njit
-def s_adjustment(model, first_bins, observed_hist, cov, binss, min_reads, xdata, y_prob):
+def s_adjustment(first_bins, observed_vaf, cov, min_reads, xdata, y_prob): # TODO: I changed observed_vaf, now is a vaf
     '''
     Estimates a suitable range for the parameter S by comparing observed and simulated data
     '''
-    observed_max_tmb = np.max(observed_hist[:first_bins])
+    observed_max_tmb = np.max(observed_vaf[:first_bins]) #
     purity = 1.0
     C = 0
     S_range = np.array([10**2, 10**3, 10**4, 10**5, 10**6, 10**7])
@@ -110,7 +107,7 @@ def s_adjustment(model, first_bins, observed_hist, cov, binss, min_reads, xdata,
     max_tmb = np.zeros(len(S_range))
     
     for i, S in enumerate(S_range):
-        sim_hist = build_simulated_vaf(purity, S, C, cov, binss, min_reads, xdata, y_prob)
+        sim_hist = simulate_vafs(purity, S, C, cov, min_reads, xdata, y_prob)
         measured_tmb[i] = np.sum(sim_hist[:first_bins])
         max_tmb[i] = np.max(sim_hist[:first_bins])
 
@@ -119,11 +116,13 @@ def s_adjustment(model, first_bins, observed_hist, cov, binss, min_reads, xdata,
 
     return S_estimate
 
-def run_fit(test_model,cov,min_reads,max_steps,observed_hist,collected_data_size,xdata,y_prob,pred_purity=None,pred_C=None):
-    binss = np.linspace(0, 1, 101)
-    first_bins=25#before 15
+def run_fit(test_model,cov,min_reads,max_steps,observed_vaf,collected_data_size,xdata,y_prob,pred_purity=None,pred_C=None):
+    '''
+    Runs the fitting process for the Wright-Fisher and Exponential models.
+    '''
+    first_bins=25 
 
-    S_estim=s_adjustment(test_model,first_bins,observed_hist,cov,binss,min_reads,xdata,y_prob)
+    S_estim=s_adjustment(first_bins,observed_vaf,cov,min_reads,xdata,y_prob) # TODO: check this
     current_S=int(10**np.mean(np.log10(S_estim)))
     S_init=(np.ones(collected_data_size)*current_S).astype(int)
     
@@ -132,7 +131,7 @@ def run_fit(test_model,cov,min_reads,max_steps,observed_hist,collected_data_size
         C_max = 100000
         C_init = np.exp(np.random.uniform(low=np.log(C_min), high=np.log(C_max), size=collected_data_size)).astype(int)
         pur_init= np.random.rand(collected_data_size)
-    elif test_model=='EXP': # C and pur informed from WF model
+    elif test_model=='EXP': # C and purity are informed from WF model
         C_options=[pred_C]
         C_init = np.random.choice(C_options, size=collected_data_size)
         p_options=[pred_purity]
@@ -145,12 +144,12 @@ def run_fit(test_model,cov,min_reads,max_steps,observed_hist,collected_data_size
 
             proposal_sd=1
             nr_of_repeats=1 #try with just one repeat to speedup
-            current_dist=distance(observed_hist,nr_of_repeats,current_purity,current_S,current_C,cov,binss,min_reads,xdata,y_prob)
+            current_dist=distance(observed_vaf,nr_of_repeats,current_purity,current_S,current_C,cov,min_reads,xdata,y_prob)
             
             scores_init[counter]=current_dist
 
             (new_purity,new_S,new_C)=propose_new_parameters(current_purity,current_S, current_C, proposal_sd)
-            proposed_dist=distance(observed_hist,nr_of_repeats,new_purity,new_S,new_C,cov,binss,min_reads,xdata,y_prob)
+            proposed_dist=distance(observed_vaf,nr_of_repeats,new_purity,new_S,new_C,cov,min_reads,xdata,y_prob)
 
             if proposed_dist < current_dist:
                 pur_init[counter]=new_purity
@@ -161,7 +160,6 @@ def run_fit(test_model,cov,min_reads,max_steps,observed_hist,collected_data_size
         prob=1./scores_init/sum(1./scores_init)
         indices = np.arange(len(scores_init))
         sampled_indices = np.random.choice(indices, size=collected_data_size, p=prob)
-        sampled_values = scores_init[sampled_indices]
         pur_init,S_init,C_init,scores_init=pur_init[sampled_indices],S_init[sampled_indices],C_init[sampled_indices],scores_init[sampled_indices]
 
     return (pur_init,S_init,C_init,scores_init)

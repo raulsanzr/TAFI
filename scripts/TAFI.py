@@ -17,9 +17,7 @@ print(donor_id)
 donor_bed = pd.read_csv(input_file, sep=',', compression='gzip') # Read the donor's data file (compressed CSV)
 
 # Extract Variant Allele Frequency (VAF) and coverage data
-vaf = donor_bed['VAF']
-# Create a histogram of VAF values (100 bins, range 0 to 1)
-real_hist = np.histogram(vaf, bins=100, range=(0, 1))[0]
+real_vaf = donor_bed['VAF']
 cov = np.array(donor_bed['coverage'])  # Coverage data
 cov_val = np.mean(cov)  # Mean coverage value
 min_reads = donor_bed["AD_ALT"].min()  # Minimum number of reads for the alternate allele
@@ -81,7 +79,7 @@ for test_model, params in models.items():
     # Run the fitting process 4 times for each model
     for i in range(4):
         pur_pred, S_pred, C_pred, scores_pred = run_fit(
-            test_model, cov, min_reads, max_steps, real_hist, collected_data_size,
+            test_model, cov, min_reads, max_steps, real_vaf, collected_data_size,
             xdata, y_prob, pred_purity, pred_C)
         
         # Store the results of each run

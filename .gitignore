@@ -8,3 +8,4 @@ scripts/run_abc.sh
 scripts/tafi.sif
 scripts/tafi_singularity.def
 scripts/TAFI_sims.py
+scripts/TAFI_25_02_2025.py
