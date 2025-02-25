@@ -54,27 +54,20 @@ final_results = pd.DataFrame([{
     'min_reads': min_reads
 }])
 
-# Define models to be tested (Wright-Fisher and Exponential) and their specific parameters
-models = {
-    "WF": {
-        "y_prob": y_prob_wf,
-        "xdata": xdata,
-    },
-    "EXP": {
-        "y_prob": y_prob_exp,
-        "xdata": exp_xdata,
-    }
-}
-
 # Initialize values of purity, S, and C as None
 pred_purity, pred_S, pred_C = None, None, None
 
 # Iterate over each model (WF and EXP)
-for test_model, params in models.items():
+for test_model in ['WF', 'EXP']:
+
+    if test_model == "WF":
+        y_prob = y_prob_wf
+        xdata = xdata
+    elif test_model == "EXP":
+        y_prob = y_prob_exp
+        xdata = exp_xdata
+    
     results = pd.DataFrame()  # Initialize a DataFrame to store intermediate results
-    y_prob = params["y_prob"]
-    xdata = params["xdata"]
-    run_function = params["run_function"]
     
     # Run the fitting process 4 times for each model
     for i in range(4):
