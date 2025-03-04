@@ -13,7 +13,7 @@ def new_params(pur, S, C, proposal_sd):
     new_C=int(max(0, C + np.random.normal() * C*0.5*proposal_sd))
     return new_pur, new_S, new_C
 
-def dist(real_vaf, nr_of_repeats, purity, S, C, cov,min_reads, xdata, y_prob):
+def distance(real_vaf, nr_of_repeats, purity, S, C, cov,min_reads, xdata, y_prob):
     '''
     Calculates the wasserstein distance between the observed and simulated VAFs.
     '''
@@ -26,7 +26,7 @@ def dist(real_vaf, nr_of_repeats, purity, S, C, cov,min_reads, xdata, y_prob):
             r_nd5[repeat]=1
         return np.mean(r_nd5)
 
-def s_adjustment(first_bins, observed_vaf, cov, min_reads, xdata, y_prob): # TODO: I changed observed_vaf, now is a vaf
+def initial_s(first_bins, observed_vaf, cov, min_reads, xdata, y_prob): # TODO: I changed observed_vaf, now is a vaf
     '''
     Estimates a suitable range for the parameter S by comparing observed and simulated data
     '''
@@ -40,7 +40,8 @@ def s_adjustment(first_bins, observed_vaf, cov, min_reads, xdata, y_prob): # TOD
     max_tmb=np.zeros(len(S_range))
     
     for i, S in enumerate(S_range):
-        sim_hist=sim_vafs(purity, S, C, cov, min_reads, xdata, y_prob)
+        sim_vaf=sim_vafs(purity, S, C, cov, min_reads, xdata, y_prob)
+        sim_hist, _=np.histogram(sim_vaf, bins=100, range=(0, 1), density=True)
         measured_tmb[i]=np.sum(sim_hist[:first_bins])
         max_tmb[i]=np.max(sim_hist[:first_bins])
 
@@ -58,7 +59,7 @@ def run_fit(test_model, cov, min_reads, max_steps, observed_vaf, collected_data_
     nr_of_repeats=5
 
     # Initialize the parameters. collected_data (100) sets of parameters that are adjusted max_steps (100) times
-    S_estim=s_adjustment(first_bins,observed_vaf,cov,min_reads,xdata,y_prob) # TODO: check this
+    S_estim=initial_s(first_bins,observed_vaf,cov,min_reads,xdata,y_prob) # TODO: check this
     current_S=int(10**np.mean(np.log10(S_estim)))
     S_init=(np.ones(collected_data_size)*current_S).astype(int)
     scores_init=np.ones(collected_data_size)
@@ -75,7 +76,7 @@ def run_fit(test_model, cov, min_reads, max_steps, observed_vaf, collected_data_
         for counter,current_purity,current_S,current_C in zip(range(0,collected_data_size),pur_init,S_init,C_init):
             current_dist=scores_init[counter]
             new_purity,new_S,new_C=new_params(current_purity,current_S, current_C, proposal_sd)
-            proposed_dist=dist(observed_vaf,nr_of_repeats,new_purity,new_S,new_C,cov,min_reads,xdata,y_prob)
+            proposed_dist=distance(observed_vaf,nr_of_repeats,new_purity,new_S,new_C,cov,min_reads,xdata,y_prob)
             if proposed_dist < current_dist:
                 pur_init[counter]=new_purity
                 S_init[counter]=new_S
