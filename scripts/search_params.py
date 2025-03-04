@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.stats import wasserstein_distance
 from numba import njit
-from simulate import *
+from simulations import *
 
 @njit
 def new_params(pur, S, C, proposal_sd):
