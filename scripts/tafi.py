@@ -1,13 +1,15 @@
+import os
 import sys
-import numpy as np
 import pandas as pd
-from abc_functions import *
-from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score
-from sklearn.preprocessing import StandardScaler
+import numpy as np
+from search_params import *
+
+# Search parameters
+max_steps=100 # Maximum number of steps for the fitting process
+collected_data_size=100 # Define the size of the collected data
 
 # Folder structure
-results_dir='../results/'
+results_dir='../results/individual/'
 os.makedirs(results_dir, exist_ok=True) # Create results directory if it doesn't exist
 
 # Read the data
@@ -33,16 +35,10 @@ y_exp=f_alpha(xdata, 1.0, 2.0)
 y_prob_exp=y_exp / np.sum(y_exp)
 y_prob_wf=y_wf / np.sum(y_wf) 
 
-# Search parameters
-max_steps=100 # Maximum number of steps for the fitting process
-collected_data_size=100 # Define the size of the collected data
-
 # Initialize a DataFrame to store final results
-final_results=pd.DataFrame([{
-    'donor':donor_id,
-    'cov':cov_val,
-    'min_reads':min_reads
-}])
+final_results=pd.DataFrame([{'donor':donor_id,
+                             'cov':cov_val,
+                             'min_reads':min_reads}])
 
 # No informed values for purity and C for the WF model
 informed_pur, informed_C=None, None
@@ -50,10 +46,7 @@ informed_pur, informed_C=None, None
 # Iterate over each model (WF and EXP)
 for test_model in ['WF', 'EXP']:
 
-    if test_model=='WF':
-        y_prob=y_prob_wf
-    elif test_model=='EXP':
-        y_prob=y_prob_exp
+    y_prob = y_prob_wf if test_model == 'WF' else y_prob_exp
         
     # for i in range(4): # Run the fitting process 4 times for each model
     pur_pred, S_pred, C_pred, scores_pred=run_fit(test_model, cov,min_reads, max_steps, real_vaf, 
@@ -68,10 +61,10 @@ for test_model in ['WF', 'EXP']:
     best_pur, best_S, best_C, best_score=pur_pred[best_index], S_pred[best_index], C_pred[best_index], scores_pred[best_index]
     
     # Save the results for each model
-    final_results[f'pur_{test_model.lower()}']=best_pur
-    final_results[f'S_{test_model.lower()}']=best_S
-    final_results[f'C_{test_model.lower()}']=best_C
-    final_results[f'score_{test_model.lower()}']=best_score
+    final_results[f'pur_{test_model}']=best_pur
+    final_results[f'S_{test_model}']=best_S
+    final_results[f'C_{test_model}']=best_C
+    final_results[f'score_{test_model}']=best_score
 
 # Save the final result to a CSV file
 final_results.to_csv(results_dir+donor_id+'.csv', index=False)
