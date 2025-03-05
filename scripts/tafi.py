@@ -37,6 +37,7 @@ y_prob_wf=y_wf / np.sum(y_wf)
 
 # Initialize a DataFrame to store final results
 final_results=pd.DataFrame([{'donor':donor_id,
+                             'observed_n':len(real_vaf),
                              'cov':cov_val,
                              'min_reads':min_reads}])
 
