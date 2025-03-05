@@ -21,7 +21,6 @@ donor_bed=pd.read_csv(input_file, sep=',', compression='gzip') # Read the donor'
 # Extract Variant Allele Frequency (VAF) and coverage data from the donor's data
 real_vaf=donor_bed['VAF']
 cov=np.array(donor_bed['coverage']) # Coverage data
-cov_val=np.mean(cov)  # Mean coverage value
 min_reads=donor_bed['AD_ALT'].min() # Minimum number of reads for the alternate allele
 
 # Adjust discretization coverage for Wright-Fisher and Exponential models
@@ -37,8 +36,8 @@ y_prob_wf=y_wf / np.sum(y_wf)
 
 # Initialize a DataFrame to store final results
 final_results=pd.DataFrame([{'donor':donor_id,
-                             'observed_n':len(real_vaf),
-                             'cov':cov_val,
+                             'observed_n':len(real_vaf), # Observed number of mutations
+                             'cov':np.mean(cov), # Mean coverage
                              'min_reads':min_reads}])
 
 # No informed values for purity and C for the WF model
