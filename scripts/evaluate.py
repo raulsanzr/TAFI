@@ -1,8 +1,8 @@
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
-from simulations import *
-from plot_solution import *
+from modules.vaf import *
+from modules.metrics import *
 
 results_dir='../results/individual/'
 data_dir = '../data/test_set/'
@@ -36,6 +36,10 @@ for file in os.listdir(results_dir):
     # Simulate the VAFs with the best parameters
     wf_vaf = sim_vafs(pur_wf, s_wf, c_wf, cov, min_reads, xdata, y_prob_wf)
     exp_vaf = sim_vafs(pur_exp, s_exp, c_exp, cov, min_reads, xdata, y_prob_exp)
+
+    # Compute more scores
+    solution['sos_WF'] = sos_distance(real_vaf, wf_vaf)
+    solution['sos_EXP'] = sos_distance(real_vaf, exp_vaf)
 
     # Plot the results
     fig, axs = plt.subplots(2, 2, figsize=(10, 6))
