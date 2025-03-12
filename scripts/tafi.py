@@ -3,7 +3,6 @@ import sys
 import pandas as pd
 import numpy as np
 from modules.abc import *
-from modules.vaf import *
 
 # Search parameters
 max_steps = 100 # Maximum number of steps for the fitting process

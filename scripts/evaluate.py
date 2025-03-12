@@ -1,10 +1,10 @@
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
-from modules.vaf import *
+from modules.abc import *
 from modules.metrics import *
 
-results_dir='../results/individual/'
+results_dir = '../results/individual/'
 data_dir = '../data/test_set/'
 individual_plots_dir = '../results/plots/individual/'
 os.makedirs(individual_plots_dir, exist_ok=True)
@@ -12,26 +12,25 @@ os.makedirs(individual_plots_dir, exist_ok=True)
 results_merged = pd.DataFrame()
 for file in os.listdir(results_dir):
     # Read the solution
-    solution=pd.read_csv(results_dir+file)
+    solution = pd.read_csv(results_dir+file)
     # Get the parameters of the best run
     pur_wf, s_wf, c_wf, score_wf = solution['pur_WF'][0], solution['S_WF'][0], solution['C_WF'][0], solution['score_WF'][0]
     pur_exp, s_exp, c_exp, score_exp = solution['pur_EXP'][0], solution['S_EXP'][0], solution['C_EXP'][0], solution['score_EXP'][0]
 
     # Read the donor's real data (needed to get the observed VAF). Same process as in tafi.py
-    donor_id=solution['donor'][0]
-    donor_bed=pd.read_csv(data_dir + donor_id + '.bed.gz', sep=',', compression='gzip')
+    donor_id = solution['donor'][0]
+    donor_bed = pd.read_csv(data_dir+donor_id+'.bed.gz', sep=',', compression='gzip')
     real_vaf = donor_bed['VAF']
-    cov = np.array(donor_bed['coverage'])  # Coverage data
-    cov_val = np.mean(cov)  # Mean coverage value
+    cov = np.array(donor_bed['coverage']) # Coverage data
+    cov_val = np.mean(cov) # Mean coverage value
     min_reads = donor_bed['AD_ALT'].min()  # Minimum number of reads for the alternate allele
-    discretization_cov = np.array([np.max([int(np.max(cov) * 1.05), 100])])
-    lowest_frequency_allowed = 1 / np.max(discretization_cov)
-    nr_of_bins = int(1 / lowest_frequency_allowed)
-    xdata = np.linspace(lowest_frequency_allowed, 1, nr_of_bins + 1)
+    discretization_cov = np.max([int(np.max(cov)*1.05), 100])
+    lowest_frequency_allowed = 1/np.max(discretization_cov)
+    xdata = np.linspace(lowest_frequency_allowed, 1, discretization_cov+1)
     y_wf = f_alpha(xdata, 1.0, 1.0)
     y_exp = f_alpha(xdata, 1.0, 2.0)
-    y_prob_exp = y_exp / np.sum(y_exp)
-    y_prob_wf = y_wf / np.sum(y_wf)
+    y_prob_exp = y_exp/np.sum(y_exp)
+    y_prob_wf = y_wf/np.sum(y_wf)
 
     # Simulate the VAFs with the best parameters
     wf_vaf = sim_vafs(pur_wf, s_wf, c_wf, cov, min_reads, xdata, y_prob_wf)
