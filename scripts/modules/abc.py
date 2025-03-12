@@ -115,7 +115,7 @@ def fit(test_model, cov, min_reads, max_steps, observed_vaf, collected_data_size
 
     # Initialize the parameters. collected_data (100) sets of parameters that are adjusted max_steps (100) times
     S_estim = initial_s(first_bins, observed_vaf, cov, min_reads, xdata, y_prob) # TODO: check this
-    current_S = int(10**np.mean(np.log10(S_estim+1e-10))) # FIX: Added 1e-10 to avoid log(0)
+    current_S = 0 if len(S_estim) == 0 else int(10 ** np.mean(np.log10(S_estim))) # FIX: start with 0 if no S_estim
     S_init = (np.ones(collected_data_size)*current_S).astype(int)
     scores_init = np.ones(collected_data_size)
  
