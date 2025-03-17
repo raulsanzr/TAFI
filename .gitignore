@@ -11,3 +11,4 @@ scripts/TAFI_sims.py
 scripts/TAFI_25_02_2025.py
 scripts/testing2.ipynb
 *.pyc
+scripts/tafi_plot_surface.py

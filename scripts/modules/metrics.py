@@ -15,8 +15,8 @@ def plot_cdf(ax, real_vaf, pred_vaf, pred_color, model):
         ax.set_ylabel('Cumulative Probability')
 
 def plot_histogram(ax, real_vaf, pred_vaf, pred_color, model):
-    ax.hist(real_vaf, bins=100, alpha=0.5, range=(0,1), label='Observed', density=True, color='tab:blue')
-    ax.hist(pred_vaf, bins=100, alpha=0.5, range=(0,1), label=f'{model} solution', density=True, color=pred_color)
+    ax.hist(real_vaf, bins=50, alpha=0.5, range=(0,1), label='Observed', density=True, color='tab:blue')
+    ax.hist(pred_vaf, bins=50, alpha=0.5, range=(0,1), label=f'{model} solution', density=True, color=pred_color)
     if model == 'WF':
         ax.set_ylabel('Frequency')
     ax.legend()

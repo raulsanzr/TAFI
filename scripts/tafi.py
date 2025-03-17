@@ -5,12 +5,12 @@ import numpy as np
 from modules.abc import *
 
 # Search parameters
-max_steps = 100 # Maximum number of steps for the fitting process
-collected_data_size = 100 # Define the size of the collected data
+iter = 100 # Number of iterations
+starting_points = 100 # Number of starting points
 
-# Folder structure
+# Create results directory if it doesn't exist
 results_dir = '../results/individual/'
-os.makedirs(results_dir, exist_ok=True) # Create results directory if it doesn't exist
+os.makedirs(results_dir, exist_ok=True)
 
 # Read the data
 input_file = sys.argv[1]
@@ -19,7 +19,7 @@ print(donor_id)
 donor_bed = pd.read_csv(input_file, sep=',', compression='gzip') # Read the donor's data file (compressed CSV)
 
 # Extract Variant Allele Frequency (VAF) and coverage data from the donor's data
-real_vaf = donor_bed['VAF']
+observed_vaf = donor_bed['VAF']
 cov=np.array(donor_bed['coverage']) # Coverage data
 min_reads = donor_bed['AD_ALT'].min() # Minimum number of reads for the alternate allele
 
@@ -34,36 +34,36 @@ y_prob_exp = y_exp/np.sum(y_exp)
 y_prob_wf = y_wf/np.sum(y_wf) 
 
 # Initialize a DataFrame to store final results
-final_results=pd.DataFrame([{'donor':donor_id,
-                             'observed_n':len(real_vaf), # Observed number of mutations
-                             'cov':np.mean(cov), # Mean coverage
-                             'min_reads':min_reads}])
+results_df=pd.DataFrame([{'donor': donor_id,
+                          'observed_n': len(observed_vaf), # Observed number of mutations
+                          'cov': np.mean(cov), # Mean coverage
+                          'min_reads': min_reads}])
 
 # No informed values for purity and C for the WF model
-informed_pur, informed_C = None, None
+pur_informed, C_informed = None, None
 
 # Iterate over each model (WF and EXP)
-for test_model in ['WF', 'EXP']:
+for model in ['WF', 'EXP']:
+    print(f'Fitting {model} model...')
 
-    y_prob = y_prob_wf if test_model=='WF' else y_prob_exp
+    y_prob = y_prob_wf if model=='WF' else y_prob_exp
         
     # for i in range(4): # Run the fitting process 4 times for each model
-    pur_pred, S_pred, C_pred, scores_pred = fit(test_model, cov,min_reads, max_steps, real_vaf, 
-                                                collected_data_size, xdata, y_prob, informed_pur, informed_C)
+    pur_pred, S_pred, C_pred, scores_pred = mcmc(model, cov, min_reads, iter, observed_vaf, starting_points, xdata, y_prob, pur_informed, C_informed)
     
     # Provide the informed values of purity and C from the WF model to the EXP one
-    informed_pur = pur_pred
-    informed_C = C_pred
+    pur_informed = pur_pred
+    C_informed = C_pred
 
     # Get the index and parameters of the best run based on the score
-    best_index = np.argmin(scores_pred) 
-    best_pur, best_S, best_C, best_score = pur_pred[best_index], S_pred[best_index], C_pred[best_index], scores_pred[best_index]
+    index_best = np.argmin(scores_pred) 
+    pur_best, S_best, C_best, score_best = pur_pred[index_best], S_pred[index_best], C_pred[index_best], scores_pred[index_best]
     
     # Save the results for each model
-    final_results[f'pur_{test_model}'] = best_pur
-    final_results[f'S_{test_model}'] = best_S
-    final_results[f'C_{test_model}'] = best_C
-    final_results[f'score_{test_model}'] = best_score
+    results_df[f'pur_{model}'] = pur_best
+    results_df[f'S_{model}'] = S_best
+    results_df[f'C_{model}'] = C_best
+    results_df[f'score_{model}'] = score_best
 
 # Save the final result to a CSV file
-final_results.to_csv(results_dir+donor_id+'.csv', index=False)
+results_df.to_csv(results_dir+donor_id+'.csv', index=False)

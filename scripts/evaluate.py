@@ -23,7 +23,7 @@ for file in os.listdir(results_dir):
     real_vaf = donor_bed['VAF']
     cov = np.array(donor_bed['coverage']) # Coverage data
     cov_val = np.mean(cov) # Mean coverage value
-    min_reads = donor_bed['AD_ALT'].min()  # Minimum number of reads for the alternate allele
+    min_reads = donor_bed['AD_ALT'].min() # Minimum number of reads for the alternate allele
     discretization_cov = np.max([int(np.max(cov)*1.05), 100])
     lowest_frequency_allowed = 1/np.max(discretization_cov)
     xdata = np.linspace(lowest_frequency_allowed, 1, discretization_cov+1)
