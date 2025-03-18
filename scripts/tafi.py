@@ -44,7 +44,7 @@ pur_informed, C_informed = None, None
 
 # Iterate over each model (WF and EXP)
 for model in ['WF', 'EXP']:
-    print(f'Fitting {model} model...')
+    print(f'-> Fitting {model} model...')
 
     y_prob = y_prob_wf if model=='WF' else y_prob_exp
         
@@ -67,3 +67,5 @@ for model in ['WF', 'EXP']:
 
 # Save the final result to a CSV file
 results_df.to_csv(results_dir+donor_id+'.csv', index=False)
+
+print(f'-> Done! :D')

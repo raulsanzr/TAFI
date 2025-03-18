@@ -45,11 +45,11 @@ for file in os.listdir(results_dir):
     # Wright-Fisher model
     plot_histogram(axs[0, 0], real_vaf, wf_vaf, pred_color='tab:green', model='WF')
     plot_cdf(axs[1, 0], real_vaf, wf_vaf, pred_color='tab:green', model='WF')
-    axs[0, 0].set_title(f"Wright-Fisher model\npur={pur_wf:.2f}, S={s_wf}, C={c_wf}\nscore={score_wf:.5f}")
+    axs[0, 0].set_title(f"Wright-Fisher model\npur={pur_wf:.2f}, S={s_wf}, C={c_wf}\ndistance={score_wf:.5f}")
     # Exponential model
     plot_histogram(axs[0, 1], real_vaf, exp_vaf, pred_color='tab:red', model='EXP')
     plot_cdf(axs[1, 1], real_vaf, exp_vaf, pred_color='tab:red', model='EXP')
-    axs[0, 1].set_title(f"Exponential model\npur={pur_exp:.2f}, S={s_exp}, C={c_exp}\nscore={score_exp:.5f}")
+    axs[0, 1].set_title(f"Exponential model\npur={pur_exp:.2f}, S={s_exp}, C={c_exp}\ndistance={score_exp:.5f}")
     plt.tight_layout()
     plt.savefig(f'../results/plots/individual/{donor_id}.png')
     plt.close()

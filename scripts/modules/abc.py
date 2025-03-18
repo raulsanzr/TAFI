@@ -64,17 +64,21 @@ def sim_vafs(pur, S, C, cov, min_reads, xdata, y_prob):
         vaf[i] = alt_S[i -len(cov_C)]/cov_S[i-len(cov_C)] 
     return vaf
 
-def distance(observed_vaf, repeats, purity, S, C, cov,min_reads, xdata, y_prob):
+def distance(observed_vaf, repeats, purity, S, C, cov, min_reads, xdata, y_prob, alpha=1):
     '''
     Calculates the wasserstein distance between the observed and simulated VAFs.
     '''
     scores = np.zeros(repeats)
     for repeat in range(repeats):
-        vaf1 = sim_vafs(purity, S, C, cov, min_reads, xdata, y_prob) # Simulate the vafs for the given parameters
-        if len(vaf1) > 10: # If there are at leat 10 mutations simulated
-            scores[repeat] = wasserstein_distance(vaf1, observed_vaf)
+        simulated_vaf = sim_vafs(purity, S, C, cov, min_reads, xdata, y_prob) # Simulate the vafs for the given parameters
+        observed_n, simulated_n = len(observed_vaf), len(simulated_vaf) # Get the number of mutations in the observed and simulated vafs
+        if simulated_n > 10: # If there are at leat 10 mutations simulated
+            w_dist = wasserstein_distance(simulated_vaf, observed_vaf)
+            n_diff_norm = abs(simulated_n-observed_n)/observed_n # Normalized count difference
+            scores[repeat] = w_dist+alpha*n_diff_norm # option 1
+            # scores[repeat] = w_dist*(1+alpha*n_diff_norm) # option 2
         else:
-            scores[repeat] = 1
+            scores[repeat] = np.inf
         return np.mean(scores)
 
 @njit
@@ -96,19 +100,15 @@ def new_params(pur, S, C, proposal_sd=1):
 #     purity = 1.0
 #     C = 0
 #     S_range = np.array([10**2, 10**3, 10**4, 10**5, 10**6, 10**7])
-    
 #     measured_tmb = np.zeros(len(S_range))
 #     max_tmb = np.zeros(len(S_range))
-    
 #     for i, S in enumerate(S_range):
 #         sim_vaf = sim_vafs(purity, S, C, cov, min_reads, xdata, y_prob)
 #         sim_hist, _ = np.histogram(sim_vaf, bins=100, range=(0, 1), density=True)
 #         measured_tmb[i] = np.sum(sim_hist[:first_bins])
 #         max_tmb[i] = np.max(sim_hist[:first_bins])
-
 #     ratio = observed_max_tmb/max_tmb
 #     S_estimate = S_range[(ratio > 0.05) & (ratio < 50)]
-
 #     return S_estimate
 
 def mcmc(model, cov, min_reads, iter, observed_vaf, starting_points, xdata, y_prob, pur_informed, C_informed):
@@ -130,13 +130,13 @@ def mcmc(model, cov, min_reads, iter, observed_vaf, starting_points, xdata, y_pr
     elif model == 'EXP': # C and purity are informed (re-used) from the WF model previously fitted
         C_init = C_informed
         pur_init = pur_informed
-    scores_init = np.ones(starting_points) # Initialize the scores as ones
+    scores_init = np.inf*np.ones(starting_points) # Initialize the scores
 
     for i in range(0, iter):
         for point, current_pur, current_S, current_C in zip(range(0, starting_points), pur_init, S_init, C_init):
             current_score = scores_init[point]
             new_pur, new_S, new_C = new_params(current_pur, current_S, current_C)
-            new_score = distance(observed_vaf, 5, new_pur, new_S, new_C, cov, min_reads, xdata, y_prob)
+            new_score = distance(observed_vaf, 1, new_pur, new_S, new_C, cov, min_reads, xdata, y_prob)
             if new_score < current_score:
                 pur_init[point], S_init[point], C_init[point], scores_init[point] = new_pur, new_S, new_C, new_score
         
