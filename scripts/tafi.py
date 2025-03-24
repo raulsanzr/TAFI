@@ -23,13 +23,10 @@ observed_vaf = donor_bed['VAF']
 cov=np.array(donor_bed['coverage']) # Coverage data
 min_reads = donor_bed['AD_ALT'].min() # Minimum number of reads for the alternate allele
 
-# Adjust discretization coverage for Wright-Fisher and Exponential models
-discretization_cov = np.max([int(np.max(cov)*1.05), 100])
-lowest_frequency_allowed = 1/discretization_cov
-xdata = np.linspace(lowest_frequency_allowed, 1, discretization_cov+1)
-y_wf = f_alpha(xdata, 1.0, 1.0)
-y_exp = f_alpha(xdata, 1.0, 2.0)
-# Normalize to probabilities
+xdata = np.linspace(1/np.max(cov), 1, np.max(cov)+1) # Generate an array of possible frequency values given the maximum observed coverage
+# Assign the probability of observing a mutation at each frequency value
+y_wf = f_alpha(xdata, 1)
+y_exp = f_alpha(xdata, 2)
 y_prob_exp = y_exp/np.sum(y_exp)
 y_prob_wf = y_wf/np.sum(y_wf) 
 
@@ -48,7 +45,6 @@ for model in ['WF', 'EXP']:
 
     y_prob = y_prob_wf if model=='WF' else y_prob_exp
         
-    # for i in range(4): # Run the fitting process 4 times for each model
     pur_pred, S_pred, C_pred, scores_pred = mcmc(model, cov, min_reads, iter, observed_vaf, starting_points, xdata, y_prob, pur_informed, C_informed)
     
     # Provide the informed values of purity and C from the WF model to the EXP one

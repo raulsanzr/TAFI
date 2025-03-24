@@ -24,13 +24,12 @@ for file in os.listdir(results_dir):
     cov = np.array(donor_bed['coverage']) # Coverage data
     cov_val = np.mean(cov) # Mean coverage value
     min_reads = donor_bed['AD_ALT'].min() # Minimum number of reads for the alternate allele
-    discretization_cov = np.max([int(np.max(cov)*1.05), 100])
-    lowest_frequency_allowed = 1/np.max(discretization_cov)
-    xdata = np.linspace(lowest_frequency_allowed, 1, discretization_cov+1)
-    y_wf = f_alpha(xdata, 1.0, 1.0)
-    y_exp = f_alpha(xdata, 1.0, 2.0)
+    xdata = np.linspace(1/np.max(cov), 1, np.max(cov)+1) # Generate an array of possible frequency values given the maximum observed coverage
+    # Assign the probability of observing a mutation at each frequency value
+    y_wf = f_alpha(xdata, 1)
+    y_exp = f_alpha(xdata, 2)
     y_prob_exp = y_exp/np.sum(y_exp)
-    y_prob_wf = y_wf/np.sum(y_wf)
+    y_prob_wf = y_wf/np.sum(y_wf) 
 
     # Simulate the VAFs with the best parameters
     wf_vaf = sim_vafs(pur_wf, s_wf, c_wf, cov, min_reads, xdata, y_prob_wf)

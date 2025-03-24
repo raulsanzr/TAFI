@@ -2,18 +2,21 @@ import numpy as np
 from scipy.stats import wasserstein_distance
 from numba import njit
 
-def f_alpha(x, a, alpha):
-    return a*(1/(x**alpha))
+def f_alpha(x, alpha):
+    '''
+    Computes the frequency of observing a mutation at a given coverage.
+    '''
+    return 1/(x**alpha)
 
 @njit
-def clonal_mutations(pur, C, cov, min_reads):
+def clonal_mutations(pur, C, cov, min_reads, ploidy=2):
     '''
-    Simulates the clonal mutations.
+    Simulates the sampling of clonal mutations.
     '''
     coverage_dist_emp_C = np.random.choice(cov, C, replace=True)
     clonal_alt_reads = np.empty(C, dtype=np.int64)
     for i in range(C):
-        clonal_alt_reads[i] = np.random.binomial(coverage_dist_emp_C[i], pur*1/2.0)
+        clonal_alt_reads[i] = np.random.binomial(coverage_dist_emp_C[i], pur/ploidy)
     return coverage_dist_emp_C[clonal_alt_reads>min_reads], clonal_alt_reads[clonal_alt_reads>min_reads]
 
 @njit
@@ -43,7 +46,7 @@ def random_binomial(coverage_dist_emp_S, pur, subclonal_frequencies, S):
 @njit
 def subclonal_mutations(pur, S, cov, min_reads, xdata, y_prob):
     '''
-    Simulates the subclonal mutations.
+    Simulates the sampling of subclonal mutations.
     '''
     coverage_dist_emp_S = np.random.choice(cov, S, replace=True)
     subclonal_frequencies = random_choice(xdata, y_prob, S)
@@ -111,12 +114,11 @@ def new_params(pur, S, C, proposal_sd=1):
 #     S_estimate = S_range[(ratio > 0.05) & (ratio < 50)]
 #     return S_estimate
 
-def mcmc(model, cov, min_reads, iter, observed_vaf, starting_points, xdata, y_prob, pur_informed, C_informed):
+def mcmc(model, cov, min_reads, iter, observed_vaf, starting_points, xdata, y_prob, pur_informed, C_informed, repeats=1, S_min=10e2, S_max=10e5, C_min=10e2, C_max=10e5):
     '''
     Performs the MCMC fitting process to find the set of parameters that best fit the observed variant allele frequencies.
     '''
     # Initialize the parameters for starting_points (default = 100) dimensions
-    S_min, S_max = 10e2, 10e5
     S_init = np.exp(np.random.uniform(low=np.log(S_min), high=np.log(S_max), size=starting_points)).astype(int) # S is sampled from a log-uniform distribution
 
     # S_estim = initial_s(first_bins, observed_vaf, cov, min_reads, xdata, y_prob)
@@ -124,7 +126,6 @@ def mcmc(model, cov, min_reads, iter, observed_vaf, starting_points, xdata, y_pr
     # S_init = (np.ones(starting_points)*current_S).astype(int)
 
     if model == 'WF':
-        C_min, C_max = 10e2, 10e5
         C_init = np.exp(np.random.uniform(low=np.log(C_min), high=np.log(C_max), size=starting_points)).astype(int) # C is sampled from a log-uniform distribution
         pur_init = np.random.rand(starting_points) # Purity is sampled from a uniform distribution
     elif model == 'EXP': # C and purity are informed (re-used) from the WF model previously fitted
@@ -136,7 +137,7 @@ def mcmc(model, cov, min_reads, iter, observed_vaf, starting_points, xdata, y_pr
         for point, current_pur, current_S, current_C in zip(range(0, starting_points), pur_init, S_init, C_init):
             current_score = scores_init[point]
             new_pur, new_S, new_C = new_params(current_pur, current_S, current_C)
-            new_score = distance(observed_vaf, 1, new_pur, new_S, new_C, cov, min_reads, xdata, y_prob)
+            new_score = distance(observed_vaf, repeats, new_pur, new_S, new_C, cov, min_reads, xdata, y_prob)
             if new_score < current_score:
                 pur_init[point], S_init[point], C_init[point], scores_init[point] = new_pur, new_S, new_C, new_score
         
