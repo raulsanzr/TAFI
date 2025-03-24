@@ -15,7 +15,7 @@ os.makedirs(results_dir, exist_ok=True)
 # Read the data
 input_file = sys.argv[1]
 donor_id = input_file.split('/')[-1].split('.')[0] # Extract donor ID from the file path
-print(donor_id)
+print(f'Running TAFI on {donor_id}')
 donor_bed = pd.read_csv(input_file, sep=',', compression='gzip') # Read the donor's data file (compressed CSV)
 
 # Extract Variant Allele Frequency (VAF) and coverage data from the donor's data
@@ -44,7 +44,7 @@ pur_informed, C_informed = None, None
 
 # Iterate over each model (WF and EXP)
 for model in ['WF', 'EXP']:
-    print(f'-> Fitting {model} model...')
+    print(f'Fitting {model} model...')
 
     y_prob = y_prob_wf if model=='WF' else y_prob_exp
         
@@ -68,4 +68,4 @@ for model in ['WF', 'EXP']:
 # Save the final result to a CSV file
 results_df.to_csv(results_dir+donor_id+'.csv', index=False)
 
-print(f'-> Done! :D')
+print(f'Done!')

@@ -45,9 +45,9 @@ def subclonal_mutations(pur, S, cov, min_reads, xdata, y_prob):
     '''
     Simulates the subclonal mutations.
     '''
-    coverage_dist_emp_S=np.random.choice(cov, S, replace=True)
-    subclonal_frequencies= random_choice(xdata, y_prob, S)
-    subclonal_alt_reads=random_binomial(coverage_dist_emp_S, pur, subclonal_frequencies, S)
+    coverage_dist_emp_S = np.random.choice(cov, S, replace=True)
+    subclonal_frequencies = random_choice(xdata, y_prob, S)
+    subclonal_alt_reads = random_binomial(coverage_dist_emp_S, pur, subclonal_frequencies, S)
     return coverage_dist_emp_S[subclonal_alt_reads>=min_reads], subclonal_alt_reads[subclonal_alt_reads>=min_reads]
 
 @njit
@@ -75,8 +75,8 @@ def distance(observed_vaf, repeats, purity, S, C, cov, min_reads, xdata, y_prob,
         if simulated_n > 10: # If there are at leat 10 mutations simulated
             w_dist = wasserstein_distance(simulated_vaf, observed_vaf)
             n_diff_norm = abs(simulated_n-observed_n)/observed_n # Normalized count difference
+            # scores[repeat] = w_dist # option 0
             scores[repeat] = w_dist+alpha*n_diff_norm # option 1
-            # scores[repeat] = w_dist*(1+alpha*n_diff_norm) # option 2
         else:
             scores[repeat] = np.inf
         return np.mean(scores)
