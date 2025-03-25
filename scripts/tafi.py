@@ -20,7 +20,7 @@ donor_bed = pd.read_csv(input_file, sep=',', compression='gzip') # Read the dono
 
 # Extract Variant Allele Frequency (VAF) and coverage data from the donor's data
 observed_vaf = donor_bed['VAF']
-cov=np.array(donor_bed['coverage']) # Coverage data
+cov = np.array(donor_bed['coverage']) # Coverage data
 min_reads = donor_bed['AD_ALT'].min() # Minimum number of reads for the alternate allele
 
 xdata = np.linspace(1/np.max(cov), 1, np.max(cov)+1) # Generate an array of possible frequency values given the maximum observed coverage
@@ -31,10 +31,10 @@ y_prob_exp = y_exp/np.sum(y_exp)
 y_prob_wf = y_wf/np.sum(y_wf) 
 
 # Initialize a DataFrame to store final results
-results_df=pd.DataFrame([{'donor': donor_id,
-                          'observed_n': len(observed_vaf), # Observed number of mutations
-                          'cov': np.mean(cov), # Mean coverage
-                          'min_reads': min_reads}])
+results_df = pd.DataFrame([{'donor': donor_id,
+                            'observed_n': len(observed_vaf), # Observed number of mutations
+                            'cov': np.mean(cov), # Mean coverage
+                            'min_reads': min_reads}])
 
 # No informed values for purity and C for the WF model
 pur_informed, C_informed = None, None

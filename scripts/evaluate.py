@@ -32,8 +32,8 @@ for file in os.listdir(results_dir):
     y_prob_wf = y_wf/np.sum(y_wf) 
 
     # Simulate the VAFs with the best parameters
-    wf_vaf = sim_vafs(pur_wf, s_wf, c_wf, cov, min_reads, xdata, y_prob_wf)
-    exp_vaf = sim_vafs(pur_exp, s_exp, c_exp, cov, min_reads, xdata, y_prob_exp)
+    wf_vaf = simulate_vaf(pur_wf, s_wf, c_wf, cov, min_reads, xdata, y_prob_wf)
+    exp_vaf = simulate_vaf(pur_exp, s_exp, c_exp, cov, min_reads, xdata, y_prob_exp)
 
     # Compute more scores
     solution['sos_WF'] = sos_distance(real_vaf, wf_vaf)

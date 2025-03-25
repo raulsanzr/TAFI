@@ -54,7 +54,7 @@ def subclonal_mutations(pur, S, cov, min_reads, xdata, y_prob):
     return coverage_dist_emp_S[subclonal_alt_reads>=min_reads], subclonal_alt_reads[subclonal_alt_reads>=min_reads]
 
 @njit
-def sim_vafs(pur, S, C, cov, min_reads, xdata, y_prob):
+def simulate_vaf(pur, S, C, cov, min_reads, xdata, y_prob):
     '''
     Builds the VAF histogram for the simulated clonal and subclonal mutations.
     '''
@@ -67,21 +67,21 @@ def sim_vafs(pur, S, C, cov, min_reads, xdata, y_prob):
         vaf[i] = alt_S[i -len(cov_C)]/cov_S[i-len(cov_C)] 
     return vaf
 
-def distance(observed_vaf, repeats, purity, S, C, cov, min_reads, xdata, y_prob, alpha=1):
+def distance(observed_vaf, repeats, purity, S, C, cov, min_reads, xdata, y_prob, lam=1):
     '''
     Calculates the wasserstein distance between the observed and simulated VAFs.
     '''
     scores = np.zeros(repeats)
     for repeat in range(repeats):
-        simulated_vaf = sim_vafs(purity, S, C, cov, min_reads, xdata, y_prob) # Simulate the vafs for the given parameters
+        simulated_vaf = simulate_vaf(purity, S, C, cov, min_reads, xdata, y_prob) # Simulate the vafs for the given parameters
         observed_n, simulated_n = len(observed_vaf), len(simulated_vaf) # Get the number of mutations in the observed and simulated vafs
         if simulated_n > 10: # If there are at leat 10 mutations simulated
             w_dist = wasserstein_distance(simulated_vaf, observed_vaf)
             n_diff_norm = abs(simulated_n-observed_n)/observed_n # Normalized count difference
             # scores[repeat] = w_dist # option 0
-            scores[repeat] = w_dist+alpha*n_diff_norm # option 1
+            scores[repeat] = w_dist+lam*n_diff_norm # option 1
         else:
-            scores[repeat] = np.inf
+            return np.inf
         return np.mean(scores)
 
 @njit
