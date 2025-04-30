@@ -67,7 +67,7 @@ def simulate_vaf(pur, S, C, cov, min_reads, xdata, y_prob):
         vaf[i] = alt_S[i -len(cov_C)]/cov_S[i-len(cov_C)] 
     return vaf
 
-def distance(observed_vaf, repeats, purity, S, C, cov, min_reads, xdata, y_prob, lam=1):
+def distance(observed_vaf, repeats, purity, S, C, cov, min_reads, xdata, y_prob, lam):
     '''
     Calculates the wasserstein distance between the observed and simulated VAFs.
     '''
@@ -75,11 +75,12 @@ def distance(observed_vaf, repeats, purity, S, C, cov, min_reads, xdata, y_prob,
     for repeat in range(repeats):
         simulated_vaf = simulate_vaf(purity, S, C, cov, min_reads, xdata, y_prob) # Simulate the vafs for the given parameters
         observed_n, simulated_n = len(observed_vaf), len(simulated_vaf) # Get the number of mutations in the observed and simulated vafs
+        max_w = np.mean(np.maximum(observed_vaf, 1-observed_vaf)) # Maximum possible wasserstein distance given the observed vaf
         if simulated_n > 10: # If there are at leat 10 mutations simulated
             w_dist = wasserstein_distance(simulated_vaf, observed_vaf)
-            n_diff_norm = abs(simulated_n-observed_n)/observed_n # Normalized count difference
-            # scores[repeat] = w_dist # option 0
-            scores[repeat] = w_dist+lam*n_diff_norm # option 1
+            w_dist_norm = w_dist/max_w # Normalized wasserstein distance
+            n_diff_norm = min(abs(simulated_n-observed_n)/observed_n, 1) # Normalized count difference (or 1 if the difference is too large)
+            scores[repeat] = w_dist_norm+lam*n_diff_norm
         else:
             return np.inf
         return np.mean(scores)
@@ -114,7 +115,7 @@ def new_params(pur, S, C, proposal_sd=1):
 #     S_estimate = S_range[(ratio > 0.05) & (ratio < 50)]
 #     return S_estimate
 
-def mcmc(model, cov, min_reads, iter, observed_vaf, starting_points, xdata, y_prob, pur_informed, C_informed, repeats=1, S_min=10e2, S_max=10e5, C_min=10e2, C_max=10e5):
+def mcmc(model, cov, min_reads, iter, observed_vaf, starting_points, xdata, y_prob, pur_informed, C_informed, lam=0.2, repeats=1, S_min=10e2, S_max=10e5, C_min=10e2, C_max=10e5):
     '''
     Performs the MCMC fitting process to find the set of parameters that best fit the observed variant allele frequencies.
     '''
@@ -137,7 +138,7 @@ def mcmc(model, cov, min_reads, iter, observed_vaf, starting_points, xdata, y_pr
         for point, current_pur, current_S, current_C in zip(range(0, starting_points), pur_init, S_init, C_init):
             current_score = scores_init[point]
             new_pur, new_S, new_C = new_params(current_pur, current_S, current_C)
-            new_score = distance(observed_vaf, repeats, new_pur, new_S, new_C, cov, min_reads, xdata, y_prob)
+            new_score = distance(observed_vaf, repeats, new_pur, new_S, new_C, cov, min_reads, xdata, y_prob, lam)
             if new_score < current_score:
                 pur_init[point], S_init[point], C_init[point], scores_init[point] = new_pur, new_S, new_C, new_score
         

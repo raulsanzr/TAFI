@@ -19,6 +19,7 @@ print(f'Running TAFI on {donor_id}')
 donor_bed = pd.read_csv(input_file, sep=',', compression='gzip') # Read the donor's data file (compressed CSV)
 
 # Extract Variant Allele Frequency (VAF) and coverage data from the donor's data
+donor_bed = donor_bed[donor_bed['filter'] == 'PASS'] # Keep only the PASS mutations
 observed_vaf = donor_bed['VAF']
 cov = np.array(donor_bed['coverage']) # Coverage data
 min_reads = donor_bed['AD_ALT'].min() # Minimum number of reads for the alternate allele
@@ -41,7 +42,7 @@ pur_informed, C_informed = None, None
 
 # Iterate over each model (WF and EXP)
 for model in ['WF', 'EXP']:
-    print(f'Fitting {model} model...')
+    print(f'Fitting the {model} model...')
 
     y_prob = y_prob_wf if model=='WF' else y_prob_exp
         

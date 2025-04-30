@@ -13,3 +13,9 @@ scripts/testing2.ipynb
 *.pyc
 scripts/tafi_plot_surface.py
 scripts/tafi_100runs.py
+/scripts/previous
+scripts/tafi_optim_lambda.py
+scripts/testing2 (copy).ipynb
+scripts/validate.py
+scripts/sims.py
+scripts/evaluate_sims.py
