@@ -95,36 +95,12 @@ def new_params(pur, S, C, proposal_sd=1):
     new_C = int(max(0, C+np.random.normal()*C*0.5*proposal_sd))
     return new_pur, new_S, new_C
 
-# def initial_s(first_bins, observed_vaf, cov, min_reads, xdata, y_prob): # TODO: I changed observed_vaf, now is a vaf
-#     '''
-#     Estimates a suitable range for the parameter S by comparing observed and simulated data.
-#     '''
-#     observed_hist, _ = np.histogram(observed_vaf, bins=100, range=(0, 1), density=True)
-#     observed_max_tmb = np.max(observed_hist[:first_bins])
-#     purity = 1.0
-#     C = 0
-#     S_range = np.array([10**2, 10**3, 10**4, 10**5, 10**6, 10**7])
-#     measured_tmb = np.zeros(len(S_range))
-#     max_tmb = np.zeros(len(S_range))
-#     for i, S in enumerate(S_range):
-#         sim_vaf = sim_vafs(purity, S, C, cov, min_reads, xdata, y_prob)
-#         sim_hist, _ = np.histogram(sim_vaf, bins=100, range=(0, 1), density=True)
-#         measured_tmb[i] = np.sum(sim_hist[:first_bins])
-#         max_tmb[i] = np.max(sim_hist[:first_bins])
-#     ratio = observed_max_tmb/max_tmb
-#     S_estimate = S_range[(ratio > 0.05) & (ratio < 50)]
-#     return S_estimate
-
 def mcmc(model, cov, min_reads, iter, observed_vaf, starting_points, xdata, y_prob, pur_informed, C_informed, lam=0.2, repeats=1, S_min=10e2, S_max=10e5, C_min=10e2, C_max=10e5):
     '''
     Performs the MCMC fitting process to find the set of parameters that best fit the observed variant allele frequencies.
     '''
     # Initialize the parameters for starting_points (default = 100) dimensions
     S_init = np.exp(np.random.uniform(low=np.log(S_min), high=np.log(S_max), size=starting_points)).astype(int) # S is sampled from a log-uniform distribution
-
-    # S_estim = initial_s(first_bins, observed_vaf, cov, min_reads, xdata, y_prob)
-    # current_S = 0 if len(S_estim) == 0 else int(10 ** np.mean(np.log10(S_estim)))
-    # S_init = (np.ones(starting_points)*current_S).astype(int)
 
     if model == 'WF':
         C_init = np.exp(np.random.uniform(low=np.log(C_min), high=np.log(C_max), size=starting_points)).astype(int) # C is sampled from a log-uniform distribution
