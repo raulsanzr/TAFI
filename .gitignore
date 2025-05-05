@@ -19,3 +19,5 @@ scripts/testing2 (copy).ipynb
 scripts/validate.py
 scripts/sims.py
 scripts/evaluate_sims.py
+/downstream/dge_analysis/data
+/downstream/survival_analysis/data
