@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 from modules.abc import *
 from modules.metrics import *
 
-results_dir = '../results/individual/'
-data_dir = '../data/test_set/'
-individual_plots_dir = '../results/plots/individual/'
+results_dir = '../results/individual_MC3/'
+data_dir = '../data/processed/MC3/'
+individual_plots_dir = '../results/plots/individual_MC3/'
 os.makedirs(individual_plots_dir, exist_ok=True)
 
 results_merged = pd.DataFrame()
@@ -50,12 +50,12 @@ for file in os.listdir(results_dir):
     plot_cdf(axs[1, 1], real_vaf, exp_vaf, pred_color='tab:red', model='EXP')
     axs[0, 1].set_title(f"Exponential model\npur={pur_exp:.2f}, S={s_exp}, C={c_exp}\ndistance={score_exp:.5f}")
     plt.tight_layout()
-    plt.savefig(f'../results/plots/individual/{donor_id}.png')
+    plt.savefig(f'../results/plots/individual_MC3/{donor_id}.png')
     plt.close()
 
     results_merged = pd.concat([results_merged, solution], ignore_index=True)
 
-results_merged.to_csv('../results/all.csv', index=False)
+results_merged.to_csv('../results/all_MC3.csv', index=False)
 
 # distribution of differences in scores
 fig, ax = plt.subplots(1, 1, figsize=(8, 5))
