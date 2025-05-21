@@ -18,9 +18,11 @@ donor_id = input_file.split('/')[-1].split('.')[0] # Extract donor ID from the f
 print(f'Running TAFI on {donor_id}')
 donor_bed = pd.read_csv(input_file, sep=',', compression='gzip') # Read the donor's data file (compressed CSV)
 
+donor_bed['coverage'] = donor_bed['AD_REF'] + donor_bed['AD_ALT'] # Calculate coverage as the sum of reference and alternate allele reads
+
 # Extract Variant Allele Frequency (VAF) and coverage data from the donor's data
-donor_bed = donor_bed[donor_bed['filter'] == 'PASS'] # Keep only the PASS mutations
-observed_vaf = donor_bed['VAF']
+# donor_bed = donor_bed[donor_bed['filter'] == 'PASS'] # Keep only the PASS mutations
+observed_vaf = donor_bed['AD_ALT']/donor_bed['coverage']
 cov = np.array(donor_bed['coverage']) # Coverage data
 min_reads = donor_bed['AD_ALT'].min() # Minimum number of reads for the alternate allele
 
