@@ -29,3 +29,7 @@ downstream/.Rhistory
 downstream/mobster_result.csv
 downstream/prop.csv
 downstream/simulationdata.Rdata
+downstream/survival_analysis/survival_MC3.ipynb
+downstream/survival_analysis/survival_HMF.ipynb
+downstream/survival_analysis/survival_PCAWG.ipynb
+downstream/survival_analysis/survival_HMF.ipynb
