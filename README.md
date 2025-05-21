@@ -13,6 +13,15 @@ git clone https://github.com/raulsanzr/TAFI.git
 
 ```bash
 cd TAFI/scripts
-python3 tafi.py input.bed
+python3 tafi.py input.csv
 ```
+
+### Input
+
+The input file must be a comma-separated values (CSV) file with a header containing the following two columns:
+
+| Column Name | Description |
+|-------------|-------------|
+| `AD_REF`    | Allelic depth for the reference allele |
+| `AD_ALT`    | Allelic depth for the alternative allele |
 
