@@ -1,7 +1,6 @@
 # Tumor Allele Frquency Interpreter (TAFI)
 
-Mutations that accumulate during tumor progression are footprints of its evolutionary history. The distribution of variant allele frequencies (**VAF**) can be used to infer relevant biological parameters or distinguish between tumor growth models.
-
+Simulation-based algorithm that infers tumor purity, clonal structure, and evolutionary mode (Wright–Fisher vs. Exponential) from variant allele frequency (VAF) distributions in bulk sequencing data.
 
 ## Installation
 
@@ -25,7 +24,7 @@ The input file must be a comma-separated values (CSV) file with a header contain
 | `AD_REF`    | Allelic depth for the reference allele |
 | `AD_ALT`    | Allelic depth for the alternative allele |
 
-## Output
+### Output
 
 The output file stored in the results folder includes:
 
@@ -34,13 +33,13 @@ The output file stored in the results folder includes:
 | `donor`       | Donor identifier or name |
 | `observed_n`  | Number of mutations in the input file |
 | `cov`         | Average sequencing coverage |
-| `min_reads`   | Minimum allelic depth of the alternative allele (`AD_ALT`) |
+| `min_reads`   | Minimum `AD_ALT` observed |
 | `pur_WF`      | Tumor purity predicted by the WF model |
-| `S_WF`        | Number of subclonal mutations (S) predicted by the WF model |
-| `C_WF`        | Number of clonal mutations (C) predicted by the WF model |
-| `score_WF`    | Score (distance) for the best WF model fit |
+| `S_WF`        | Number of subclonal mutations predicted by the WF model |
+| `C_WF`        | Number of clonal mutations predicted by the WF model |
+| `score_WF`    | Score for the best WF model fit |
 | `pur_EXP`     | Tumor purity predicted by the EXP model |
-| `S_EXP`       | Number of subclonal mutations (S) predicted by the EXP model |
-| `C_EXP`       | Number of clonal mutations (C) predicted by the EXP model |
-| `score_EXP`   | Score (distance) for the best EXP model fit |
+| `S_EXP`       | Number of subclonal mutations predicted by the EXP model |
+| `C_EXP`       | Number of clonal mutations predicted by the EXP model |
+| `score_EXP`   | Score for the best EXP model fit |
 
