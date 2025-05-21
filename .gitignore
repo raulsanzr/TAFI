@@ -21,3 +21,11 @@ scripts/sims.py
 scripts/evaluate_sims.py
 /downstream/dge_analysis/data
 /downstream/survival_analysis/data
+scripts/testing2 (another copy).ipynb
+downstream/survival_analysis/zzz.ipynb
+downstream/dge_analysis/.Rhistory
+downstream/.Rhistory
+.Rhistory
+downstream/mobster_result.csv
+downstream/prop.csv
+downstream/simulationdata.Rdata

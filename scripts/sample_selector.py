@@ -34,7 +34,7 @@ def plot_vaf(vaf, freq_range, dens_range, freq_peak, dens_peak, donor, thresh):
         dens_peak (list): Position of the detected peaks in the y-axis.
         donor (str): Name of the donor.
     '''
-    plt.hist(x=vaf, bins=100, range=(0, 1), density=True) # plot the variant allele frequency histogram
+    plt.hist(x=vaf, bins=50, range=(0, 1), density=True) # plot the variant allele frequency histogram
     plt.plot(freq_range, dens_range, color='black') # plot the probability density function
     plt.scatter(freq_peak, dens_peak, color='red', label='Peaks') # plot the detected peaks
     plt.axvline(x=thresh, color='r', linestyle='dashed', linewidth=2) # threshold line
@@ -68,7 +68,7 @@ def selector(bed_file, cohort):
         return 'discard'
     
     # Read the file into a DataFrame
-    df = pd.read_csv(bed_file, sep='\t', compression='gzip', header=0)
+    df = pd.read_csv(bed_file, sep='\t', compression='gzip', header=0, low_memory=False)
 
     # Specific filter for MC3 cohort: exclude mitochondrial and sex chromosomes
     if 'MC3' in cohort:
@@ -165,9 +165,9 @@ def process_file(file, cohort):
 # Set up directories and arguments
 cohort = sys.argv[1]
 home_dir = '..'
-data_dir = home_dir + '/data_raw/' + cohort + '/'
-out_dir = home_dir + '/data_filtered/' + cohort + '/'
-plots_dir = home_dir + '/results/vafs/' + cohort + '/'
+data_dir = home_dir + '/data/raw/' + cohort + '/'
+out_dir = home_dir + '/data/filtered/' + cohort + '/'
+plots_dir = home_dir + '/data/filtered/plots/' + cohort + '/'
 
 # Create output directories if they don't exist
 os.makedirs(out_dir, exist_ok=True)
@@ -185,7 +185,7 @@ with ProcessPoolExecutor(max_workers=num_cores) as executor:
     futures = {executor.submit(process_file, file, cohort): file for file in files}
     for future in tqdm(as_completed(futures), total=len(futures), desc="Processing files"):
         category = future.result()
-        classification[category] += 1
+        classification[category]+=1
 
 # Save classification summary with current date and time
 current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

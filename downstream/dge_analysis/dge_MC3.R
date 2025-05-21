@@ -7,7 +7,7 @@ library(org.Hs.eg.db)
 library(BiocParallel)
 library(ggbeeswarm)
 library(pals)
-library(quantmod)
+# library(quantmod)
 library(DEGreport)
 
 # READ THE DATA
@@ -22,7 +22,7 @@ counts <- read.csv('MC3_counts.tsv', header=T)
 metadata <- read.csv('gdc_sample_sheet_all.csv', header=T)
 
 # model <- 'CN7'
-cancertype <- 'SKCM'
+# cancertype <- 'SKCM'
 
 # # predicted classification of each donor
 # class_WF <- read.csv(paste0('Documents/MC3/groups/',model,'/WF_df1.csv'), header=T)
@@ -32,15 +32,11 @@ cancertype <- 'SKCM'
 # class_EXP <- read.csv(paste0('Documents/MC3/groups/',model,'/EXP_df1.csv'), header=T)
 # class_EXP$Class <- 'EXP'
 
-scores <- read.csv('predictions/ABC_scores.csv')
+scores <- read.csv('../../../results/all_MC3.csv')
 
-class <- scores[c('donor', 'ngauss_gauss_clas_strict')]
-
-class$cons <- ifelse(class$ngauss_gauss_clas_strict == 0.5, NA, class$ngauss_gauss_clas_strict)
-class <- na.omit(class)
-class <- class[c('donor', 'cons')]
-colnames(class)[1] <- 'sampleId'
-class$cons <- as.factor(class$cons)
+class <- scores[c('donor', 'score_WF', 'score_EXP')]
+class$mode <- ifelse(class$score_WF > class$score_EXP, "WF", "EXP")
+class$sampleId <- class$donor
 
 #------------------------------------------------------------------------------#
 
@@ -53,7 +49,9 @@ colnames(counts) <- str_replace(colnames(counts),'[.]','-')
 colnames(counts) <- str_replace(colnames(counts),'[.]','-')
 colnames(counts) <- str_replace(colnames(counts),'[.]','-')
 
-classification <- rbind(class_WF[,c(1,6)], class_CC[,c(1,7)],class_EXP[,c(1,6)])
+class[,c(1,4)]
+
+classification <- class[,c(1,4)] # rbind(class_WF[,c(1,6)], class_CC[,c(1,7)],class_EXP[,c(1,6)])
 colnames(classification) <- c('Sample.ID', 'Class')
 
 # keep the first 15 characters of the IDs
@@ -80,6 +78,12 @@ rownames(metadata) <- metadata$Sample.ID
 # check that they are correctly sorted (TRUE)
 all(rownames(metadata) %in% colnames(counts_new))
 all(rownames(metadata) == colnames(counts_new[2:length(counts_new)]))
+
+#..............................................................................#
+tab <- table(metadata$cancerType, metadata$Class)
+prop.table(tab, margin = 2)
+
+#..............................................................................#
 
 #------------------------------------------------------------------------------#
 
